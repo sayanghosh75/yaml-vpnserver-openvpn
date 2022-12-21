@@ -1,0 +1,68 @@
+---
+# Copyright 2021, 2022. Kyndryl All Rights Reserved.
+# #
+# # Licensed under the Apache License, Version 2.0 (the "License");
+# # you may not use this file except in compliance with the License.
+# # You may obtain a copy of the License at
+# #
+# # https://www.apache.org/licenses/LICENSE-2.0
+# #
+# # Unless required by applicable law or agreed to in writing, software
+# # distributed under the License is distributed on an "AS IS" BASIS,
+# # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# # See the License for the specific language governing permissions and
+# # limitations under the License.
+# #
+
+- name: Configure the OpenVPN server
+  hosts: AWS_Servers, !DummyHostAWS
+
+  vars_files:
+    - vpn-configs.yml
+
+  tasks:
+  - name: Generate and transfer the OpenVPN configuration files
+    block:
+      - name: Generate root CA certificate
+        debug:
+          msg: >
+            "Replace this block for actual root CA certificate"
+            "processing"
+      
+      - name: Generate vpn server key pair
+        debug:
+          msg: >
+            "Replace this block for vpn server key pair"
+            "generation"
+
+      - name: Generate vpn server certificate
+        debug:
+          msg: >
+            "Replace this block for vpn server certificate"
+            "generation"
+      
+      - name: Generate Diffie-Hellman parameters
+        debug:
+          msg: >
+            "Replace this block for creating DH parameters"
+      
+      - name: Generate shared TLS Authentication key
+        debug:
+          msg: >
+            "Replace this block for TLS Auth key generation"
+
+      - name: Move the OpenVPN configuration to the server
+        template:
+          src: templates/{{ vpn_config }}.ovpn.j2
+          dest: /etc/openvpn/server/{{ vpn_config }}.conf
+
+    rescue:
+      - name: Declare any error(s)
+        debug:
+          msg: "Error configuring OpenVPN server"
+      
+    always:
+      - name: Clean up configuration tasks
+        debug:
+          msg: "Place holder for cleaning up config tasks"
+...

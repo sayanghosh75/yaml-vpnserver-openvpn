@@ -1,0 +1,85 @@
+---
+# Copyright 2021, 2022. Kyndryl All Rights Reserved.
+# #
+# # Licensed under the Apache License, Version 2.0 (the "License");
+# # you may not use this file except in compliance with the License.
+# # You may obtain a copy of the License at
+# #
+# # https://www.apache.org/licenses/LICENSE-2.0
+# #
+# # Unless required by applicable law or agreed to in writing, software
+# # distributed under the License is distributed on an "AS IS" BASIS,
+# # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# # See the License for the specific language governing permissions and
+# # limitations under the License.
+# #
+
+- name: Configure the OpenVPN server for Routing
+  hosts: AWS_Servers, !DummyHostAWS
+
+  vars_files:
+    - vpn-configs.yml
+
+  tasks:
+  - name: Enable IP v4 forwarding in sysctl
+    sysctl:
+      name: net.ipv4.ip_forward
+      value: "1"
+      sysctl_set: true
+      state: present
+      reload: true
+
+  - name: Enable NAT or Masquerade on Firewall or IP Tables
+    block:
+      - name: firewalld is started
+        service:
+          name: firewalld
+          state: started
+          enabled: true
+
+      - name: Enable masquerade on firewall
+        firewalld:
+          masquerade: true
+          state: enabled
+          immediate: true
+          permanent: true
+          zone: public
+
+      - name: Update firewall rule(s) for OpenVPN port(s)
+        firewalld:
+          port: "{{ openvpn_port }}/{{ openvpn_protocol }}"
+          immediate: true
+          permanent: true
+          state:  enabled
+
+      - name: Update firewall rule(s) for https
+        firewalld:
+          service: https
+          immediate: true
+          permanent: true
+          state:  enabled
+
+      - name: Update firewall rule(s) for http
+        firewalld:
+          service: http
+          immediate: true
+          permanent: true
+          state:  enabled
+    
+    rescue:
+      - name: Install IP Tables as firewalld may be uninstalled for podman conflict
+        yum:
+          name: iptables
+          state: present
+
+      - name: Execute IP tables if firewalld not available
+        iptables:
+          table: nat
+          chain: POSTROUTING
+          jump: MASQUERADE
+    
+    always:
+      - name: Clean up if required
+        debug:
+          msg: "Cleanup network routing and nat"
+...
